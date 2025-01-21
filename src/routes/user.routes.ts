@@ -1,7 +1,7 @@
 import {
-  getAllPlayers,
+  getAllUsers,
   getProfile,
-  getUserByNickname,
+  getUserByUsername,
   login,
   register,
 } from "@/controllers/user.controller";
@@ -12,8 +12,8 @@ const router = Router();
 
 router.post("/register", register);
 router.post("/login", login);
-router.get("/info/:nickname", authMiddleware, getUserByNickname);
-router.get("/all", authMiddleware, getAllPlayers);
+router.get("/info/:username", authMiddleware, getUserByUsername);
+router.get("/all", authMiddleware, getAllUsers);
 router.get("/profile", authMiddleware, getProfile);
 
 export default router;
