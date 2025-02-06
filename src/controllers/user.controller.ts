@@ -11,9 +11,9 @@ export const register = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { email, password, nickname } = req.body;
+    const { email, password, username } = req.body;
 
-    if (!email || !password || !nickname) {
+    if (!email || !password || !username) {
       res.status(400).json({ message: EResponseMessage.IS_REQUIRED });
       return;
     }
@@ -23,15 +23,15 @@ export const register = async (
       return;
     }
 
-    const existingEmail = await UserEntity.findOne({ email });
-    if (existingEmail) {
-      res.status(400).json({ message: EResponseMessage.EMAIL_TAKEN });
+    const existingUsername = await UserEntity.findOne({ username });
+    if (existingUsername) {
+      res.status(400).json({ message: EResponseMessage.USERNAME_TAKEN });
       return;
     }
 
-    const existingNickname = await UserEntity.findOne({ nickname });
-    if (existingNickname) {
-      res.status(400).json({ message: EResponseMessage.NICKNAME_TAKEN });
+    const existingEmail = await UserEntity.findOne({ email });
+    if (existingEmail) {
+      res.status(400).json({ message: EResponseMessage.EMAIL_TAKEN });
       return;
     }
 
@@ -40,7 +40,7 @@ export const register = async (
     const newUser = await UserEntity.create({
       email,
       password: hashedPassword,
-      nickname,
+      username,
       id: uuidv4(),
     });
 
@@ -52,7 +52,7 @@ export const register = async (
       user: {
         id: newUser.id,
         email: newUser.email,
-        nickname: newUser.nickname,
+        username: newUser.username,
         avatar: newUser.avatar,
       },
       tokens: {
@@ -71,9 +71,9 @@ export const login = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { nickname, password } = req.body;
+    const { email, password } = req.body;
 
-    const user = await UserEntity.findOne({ nickname });
+    const user = await UserEntity.findOne({ email });
     if (!user) {
       res.status(400).json({ message: EResponseMessage.INVALID_CREDENTIALS });
       return;
@@ -93,7 +93,7 @@ export const login = async (
       user: {
         id: user.id,
         email: user.email,
-        nickname: user.nickname,
+        username: user.username,
         avatar: user.avatar,
       },
       tokens: {
@@ -117,7 +117,7 @@ export const getProfile = async (
       return;
     }
 
-    const user = await UserEntity.findOne({ nickname: req.user.nickname });
+    const user = await UserEntity.findOne({ username: req.user.username });
     if (!user) {
       res.status(404).json({ message: EResponseMessage.USER_NOT_FOUND });
       return;
@@ -127,7 +127,7 @@ export const getProfile = async (
       user: {
         id: user.id,
         email: user.email,
-        nickname: user.nickname,
+        username: user.username,
         avatar: user.avatar,
       },
     });
@@ -136,15 +136,15 @@ export const getProfile = async (
   }
 };
 
-export const getUserByNickname = async (
+export const getUserByUsername = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { nickname } = req.params;
+    const { username } = req.params;
 
-    const user = await UserEntity.findOne({ nickname });
+    const user = await UserEntity.findOne({ username });
     if (!user) {
       res.status(404).json({ message: EResponseMessage.USER_NOT_FOUND });
       return;
@@ -153,7 +153,7 @@ export const getUserByNickname = async (
     res.status(200).json({
       user: {
         id: user.id,
-        nickname: user.nickname,
+        nickname: user.username,
         avatar: user.avatar,
       },
     });
@@ -162,24 +162,24 @@ export const getUserByNickname = async (
   }
 };
 
-export const getAllPlayers = async (
+export const getAllUsers = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user?.nickname) {
+    if (!req.user?.username) {
       res.status(401).json({ message: EResponseMessage.INVALID_CREDENTIALS });
       return;
     }
 
-    const { nickname } = req.user;
+    const { username } = req.user;
 
-    const users = await UserEntity.find({ nickname: { $ne: nickname } });
+    const users = await UserEntity.find({ username: { $ne: username } });
 
     const formattedUsers = users.map((user) => ({
       id: user.id,
-      nickname: user.nickname,
+      username: user.username,
       avatar: user.avatar,
     }));
 

@@ -1,5 +1,5 @@
 export interface IUser {
-  nickname: string;
+  username: string;
   email: string;
   password: string;
   id: string;
@@ -13,4 +13,4 @@ export interface ITimeStamp {
   };
 }
 
-export interface ITokenUserData extends Pick<IUser, "nickname" | "id"> {}
+export interface ITokenUserData extends Pick<IUser, "username" | "id"> {}
