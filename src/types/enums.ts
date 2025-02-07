@@ -12,4 +12,5 @@ export enum EResponseMessage {
   INVALID_TOKEN = "invalidToken",
   TOKEN_REFRESHED = "tokenRefreshed",
   SERVER_ERROR = "serverError",
+  SONGS_NOT_FIND = "songsNotFind",
 }
