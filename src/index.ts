@@ -1,7 +1,10 @@
 import connectDB from "@/config/db";
+import playlistRoutes from "@/routes/playlist.rotes";
+import recommendationRoutes from "@/routes/recommendation.routes";
 import refreshRoutes from "@/routes/refresh.routes";
-import userRoutes from "@/routes/user.routes";
 import songRoutes from "@/routes/song.routes";
+import userRoutes from "@/routes/user.routes";
+
 import cors from "cors";
 import dotenv from "dotenv";
 import fileUpload from "express-fileupload";
@@ -20,8 +23,10 @@ app.use(cors());
 app.use(fileUpload());
 
 app.use("/api/users", userRoutes);
+app.use("/api/playlists", playlistRoutes);
 app.use("/api/refresh", refreshRoutes);
 app.use("/api/songs", songRoutes);
+app.use("/api/recommendation", recommendationRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({ msg: "Server is up and running" });
