@@ -3,6 +3,7 @@ import cloudinary from "../config/cloudinary";
 import Song from "@/entities/Song.entity";
 import { UploadedFile } from "express-fileupload";
 import { EResponseMessage } from "@/types/enums";
+import UserEntity from "@/entities/User.entity";
 
 type CloudinaryUploadResponse = {
   public_id: string;
@@ -169,6 +170,108 @@ export const getSongById = async (
     };
 
     res.status(200).json(formattedSong);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getRecomendedArtistsByGenres = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user?.username) {
+      res.status(401).json({ message: "Invalid credentials" });
+      return;
+    }
+
+    const genresParam = req.query.genres;
+
+    if (!genresParam || typeof genresParam !== "string") {
+      res.status(400).json({ message: "Genres are required" });
+      return;
+    }
+
+    const genres = genresParam.split(",").map((genre) => genre.trim());
+
+    const allUsers: {
+      username: string;
+      avatar: string | null;
+      songsInGenre: number;
+      genre: string;
+      id: string;
+    }[] = [];
+
+    for (const genre of genres) {
+      const songs = await Song.find({ genres: genre });
+
+      const userSongCounts: Record<string, number> = {};
+      songs.forEach((song) => {
+        const username = song.username;
+        userSongCounts[username] = (userSongCounts[username] || 0) + 1;
+      });
+
+      const users = await Promise.all(
+        Object.keys(userSongCounts).map(async (username) => {
+          const user = await UserEntity.findOne({ username });
+          if (!user) return null;
+
+          return {
+            username,
+            avatar: user.avatar,
+            songsInGenre: userSongCounts[username],
+            genre,
+            id: user.id,
+          };
+        })
+      );
+
+      const genreUsers = users
+        .filter(Boolean)
+        .sort((a, b) => b!.songsInGenre - a!.songsInGenre);
+
+      allUsers.push(...(genreUsers as any[]));
+    }
+
+    // Ensure at least one user per genre
+    const selectedUsers: {
+      username: string;
+      avatar: string | null;
+      genre: string;
+      id: string;
+    }[] = [];
+
+    const usedUsernames = new Set<string>();
+
+    for (const genre of genres) {
+      const userInGenre = allUsers.find(
+        (u) => u.genre === genre && !usedUsernames.has(u.username)
+      );
+      if (userInGenre) {
+        selectedUsers.push(userInGenre);
+        usedUsernames.add(userInGenre.username);
+      }
+    }
+
+    // Fill up to 10 users total
+    const remainingUsers = allUsers
+      .filter((u) => !usedUsernames.has(u.username))
+      .sort((a, b) => b.songsInGenre - a.songsInGenre);
+
+    for (const user of remainingUsers) {
+      if (selectedUsers.length >= 10) break;
+      selectedUsers.push(user);
+      usedUsernames.add(user.username);
+    }
+
+    const response = selectedUsers.map((user) => ({
+      image: user.avatar,
+      text: user.username,
+      id: user.id,
+    }));
+
+    res.status(200).json(response);
   } catch (error) {
     next(error);
   }

@@ -156,6 +156,9 @@ export const getUserByUsername = async (
         email: user.email,
         username: user.username,
         avatar: user.avatar,
+        subscribers: user.subscribers,
+        following: user.following,
+        preferences: user.preferences,
       },
     });
   } catch (error) {
@@ -185,6 +188,98 @@ export const getAllUsers = async (
     }));
 
     res.status(200).json({ players: formattedUsers });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const saveUserAnswers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { username, genres, artists } = req.body;
+
+    if (!username) {
+      res.status(401).json({ message: "Invalid credentials" });
+      return;
+    }
+
+    const user = await UserEntity.findOne({ username });
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    // Додаємо жанри в preferences
+    user.preferences = Array.from(
+      new Set([...(user.preferences || []), ...genres])
+    );
+
+    // Додаємо artists у following
+    user.following = Array.from(
+      new Set([...(user.following || []), ...artists])
+    );
+
+    await user.save();
+
+    // Для кожного artist додаємо цього user до їх subscribers
+    await Promise.all(
+      artists.map(async (artistId: string) => {
+        const artist = await UserEntity.findOne({ id: artistId });
+        if (artist) {
+          artist.subscribers = Array.from(
+            new Set([...(artist.subscribers || []), user.id])
+          );
+          await artist.save();
+        }
+      })
+    );
+
+    res.status(200).json({ message: "User answers saved successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateSubscribers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { username, followee } = req.body;
+
+    const user = await UserEntity.findOne({ username }); // the one initiating follow/unfollow
+    const target = await UserEntity.findOne({ username: followee }); // the one being followed/unfollowed
+
+    if (!user || !target) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    const isFollowing = user.following.includes(target.id);
+
+    if (isFollowing) {
+      // Unfollow
+      user.following = user.following.filter((id) => id !== target.id);
+      target.subscribers = target.subscribers.filter((id) => id !== user.id);
+    } else {
+      // Follow
+      user.following.push(target.id);
+      target.subscribers.push(user.id);
+    }
+
+    await user.save();
+    await target.save();
+
+    res.status(200).json({
+      message: isFollowing
+        ? "Successfully unfollowed"
+        : "Successfully followed",
+    });
   } catch (error) {
     next(error);
   }

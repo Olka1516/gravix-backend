@@ -4,6 +4,9 @@ export interface IUser {
   password: string;
   id: string;
   avatar: string | null;
+  subscribers: string[];
+  following: string[];
+  preferences: string[];
 }
 
 export interface ITimeStamp {
