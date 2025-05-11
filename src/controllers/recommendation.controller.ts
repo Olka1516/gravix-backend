@@ -214,6 +214,112 @@ export const getRecommendedSongsByAuthors = async (
   }
 };
 
+export const getPopularSongs = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ message: EResponseMessage.INVALID_CREDENTIALS });
+      return;
+    }
+
+    const songs = await Song.aggregate([
+      {
+        $match: { authorID: { $ne: req.user.id } },
+      },
+      {
+        $addFields: { likesCount: { $size: "$likes" } },
+      },
+      {
+        $sort: { likesCount: -1 },
+      },
+      {
+        $limit: 10,
+      },
+    ]);
+
+    res.status(200).json(songs);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPopularPlaylists = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ message: EResponseMessage.INVALID_CREDENTIALS });
+      return;
+    }
+
+    const playlists = await PlayList.aggregate([
+      {
+        $match: { ownerID: { $ne: req.user.id } },
+      },
+      {
+        $addFields: { likesCount: { $size: "$likes" } },
+      },
+      {
+        $sort: { likesCount: -1 },
+      },
+      {
+        $limit: 10,
+      },
+    ]);
+
+    res.status(200).json(playlists);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPopularAuthors = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ message: EResponseMessage.INVALID_CREDENTIALS });
+      return;
+    }
+
+    const users = await UserEntity.aggregate([
+      {
+        $match: { id: { $ne: req.user.id } },
+      },
+      {
+        $addFields: { subscribersCount: { $size: "$subscribers" } },
+      },
+      {
+        $sort: { subscribersCount: -1 },
+      },
+      {
+        $limit: 10,
+      },
+    ]);
+
+    const formattedUsers = users.map((user) => ({
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      avatar: user.avatar,
+      subscribers: user.subscribers,
+      following: user.following,
+      preferences: user.preferences,
+    }));
+
+    res.status(200).json(formattedUsers);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getRandomSongsByAuthors = async (
   req: Request,
   res: Response,
