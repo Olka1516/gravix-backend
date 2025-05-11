@@ -106,6 +106,85 @@ export const createSong = async (
   }
 };
 
+export const updateSong = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const songId = req.params.id;
+
+    if (!req.user?.username) {
+      res.status(401).json({ message: EResponseMessage.INVALID_CREDENTIALS });
+      return;
+    }
+
+    const existingSong = await Song.findById(songId);
+    if (!existingSong) {
+      res.status(404).json({ message: "Song not found" });
+      return;
+    }
+
+    const {
+      title,
+      description,
+      lyrics,
+      genres,
+      duration,
+      releaseYear,
+      rating,
+    } = req.body;
+
+    // Оновлюємо текстові поля, якщо вони надійшли
+    if (title) existingSong.title = title;
+    if (description) existingSong.description = description;
+    if (lyrics) existingSong.lyrics = lyrics;
+    if (duration) existingSong.duration = duration;
+    if (releaseYear) existingSong.releaseYear = releaseYear;
+    if (rating !== undefined) existingSong.rating = Number(rating);
+    if (genres) {
+      existingSong.genres = Array.isArray(genres) ? genres : JSON.parse(genres);
+    }
+
+    // Якщо є новий аудіофайл
+    if (req.files?.song) {
+      const songFile = req.files.song as UploadedFile;
+      const songUpload = await new Promise((resolve) => {
+        cloudinary.uploader
+          .upload_stream({ resource_type: "video" }, (error, uploadResult) => {
+            resolve(uploadResult);
+          })
+          .end(songFile.data);
+      });
+      const songUrl = songUpload as CloudinaryUploadResponse;
+      existingSong.song = songUrl.secure_url;
+    }
+
+    // Якщо є нове зображення
+    if (req.files?.image) {
+      const imageFile = req.files.image as UploadedFile;
+      const imageUpload = await new Promise((resolve) => {
+        cloudinary.uploader
+          .upload_stream((error, uploadResult) => {
+            resolve(uploadResult);
+          })
+          .end(imageFile.data);
+      });
+      const imageUrl = imageUpload as CloudinaryUploadResponse;
+      existingSong.image = imageUrl.secure_url;
+    }
+
+    await existingSong.save();
+
+    res.status(200).json({
+      message: "Song updated successfully",
+      song: existingSong,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getSongsByAuthor = async (
   req: Request,
   res: Response,
@@ -174,6 +253,28 @@ export const getSongById = async (
     };
 
     res.status(200).json(formattedSong);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteSongById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const song = await Song.findById(id);
+    if (!song) {
+      res.status(404).json({ message: "Song not found" });
+      return;
+    }
+
+    await song.deleteOne();
+
+    res.status(200).json({ message: "Song deleted successfully" });
   } catch (error) {
     next(error);
   }

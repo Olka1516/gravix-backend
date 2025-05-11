@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 
 const SongSchema = new mongoose.Schema({
-  _id: { type: mongoose.Types.ObjectId, required: true },
   title: { type: String, required: true },
   description: { type: String, required: false },
   lyrics: { type: String, required: false },
