@@ -4,6 +4,23 @@ import { EResponseMessage } from "@/types/enums";
 import bcrypt from "bcryptjs";
 import { NextFunction, Request, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
+import cloudinary from "../config/cloudinary";
+import { UploadedFile } from "express-fileupload";
+
+type CloudinaryUploadResponse = {
+  public_id: string;
+  version: number;
+  signature: string;
+  width: number;
+  height: number;
+  format: string;
+  resource_type: string;
+  created_at: string;
+  bytes: number;
+  type: string;
+  url: string;
+  secure_url: string;
+};
 
 export const register = async (
   req: Request,
@@ -280,6 +297,52 @@ export const updateSubscribers = async (
         ? "Successfully unfollowed"
         : "Successfully followed",
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateUsesrPhoto = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.files?.image) {
+      res.status(400).json({ message: "Missing required fields" });
+      return;
+    }
+
+    if (!req.user?.username) {
+      res.status(401).json({ message: EResponseMessage.INVALID_CREDENTIALS });
+      return;
+    }
+
+    const imageFile = req.files.image as UploadedFile;
+
+    const imageUpload = await new Promise((resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream({ folder: "avatars" }, (error, result) => {
+          if (error || !result) return reject(error);
+          resolve(result);
+        })
+        .end(imageFile.data);
+    });
+
+    const imageUrl = (imageUpload as CloudinaryUploadResponse).secure_url;
+
+    const updatedUser = await UserEntity.findOneAndUpdate(
+      { username: req.user.username },
+      { avatar: imageUrl },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.status(200).json({ message: "Photo updated", avatar: imageUrl });
   } catch (error) {
     next(error);
   }
