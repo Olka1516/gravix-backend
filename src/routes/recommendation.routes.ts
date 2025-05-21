@@ -1,4 +1,7 @@
 import {
+  getPopularAuthors,
+  getPopularPlaylists,
+  getPopularSongs,
   getRandomSongsByAuthors,
   getRecommendedPlaylistsBySongsAuthors,
   getRecommendedPlaylistsBySongsGenres,
@@ -23,5 +26,9 @@ router.get(
 router.get("/songs/genres", authMiddleware, getRecommendedSongsByGenres);
 router.get("/songs/authors", authMiddleware, getRecommendedSongsByAuthors);
 router.get("/songs/random", authMiddleware, getRandomSongsByAuthors);
+
+router.get("/playlists/popular", authMiddleware, getPopularPlaylists);
+router.get("/songs/popular", authMiddleware, getPopularSongs);
+router.get("/authors/popular", authMiddleware, getPopularAuthors);
 
 export default router;
