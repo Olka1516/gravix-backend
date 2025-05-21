@@ -137,3 +137,39 @@ export const getSongsByUsername = async (
     next(error);
   }
 };
+
+export const getSongById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const song = await Song.findOne({ _id: id });
+    if (!song) {
+      res.status(404).json({ message: EResponseMessage.SONG_NOT_FIND });
+      return;
+    }
+
+    const formattedSong = {
+      username: song.username,
+      author: song.author,
+      description: song.description,
+      duration: song.duration,
+      genres: song.genres,
+      image: song.image,
+      lyrics: song.lyrics,
+      rating: song.rating,
+      ratingCount: song.ratingCount,
+      releaseYear: song.releaseYear,
+      song: song.song,
+      title: song.title,
+      id: song.id,
+    };
+
+    res.status(200).json(formattedSong);
+  } catch (error) {
+    next(error);
+  }
+};
