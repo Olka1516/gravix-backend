@@ -14,4 +14,14 @@ export enum EResponseMessage {
   SERVER_ERROR = "serverError",
   SONGS_NOT_FIND = "songsNotFind",
   SONG_NOT_FIND = "songNotFind",
+  SONG_ALREADY_LIKED = "songAlreadyLiked",
+  SONG_NOT_LIKED = "songNotLiked",
+  PLAYLIST_ALREADY_LIKED = "playlistAlreadyLiked",
+  PLAYLIST_NOT_LIKED = "playlistNotLiked",
+  PLAYLIST_NOT_FOUND = "playlistNotFound",
+}
+
+export enum EVisibility {
+  PUBLIC = "public",
+  PRIVATE = "private",
 }
