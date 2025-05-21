@@ -7,6 +7,7 @@ import {
   getRecommendedPlaylistsBySongsGenres,
   getRecommendedSongsByAuthors,
   getRecommendedSongsByGenres,
+  searchEntities,
 } from "@/controllers/recommendation.controller";
 import authMiddleware from "@/middlewares/auth.middleware";
 import { Router } from "express";
@@ -30,5 +31,6 @@ router.get("/songs/random", authMiddleware, getRandomSongsByAuthors);
 router.get("/playlists/popular", authMiddleware, getPopularPlaylists);
 router.get("/songs/popular", authMiddleware, getPopularSongs);
 router.get("/authors/popular", authMiddleware, getPopularAuthors);
+router.get("/search", searchEntities);
 
 export default router;

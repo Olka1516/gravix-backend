@@ -246,38 +246,6 @@ export const getPopularSongs = async (
   }
 };
 
-export const getPopularPlaylists = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    if (!req.user?.id) {
-      res.status(401).json({ message: EResponseMessage.INVALID_CREDENTIALS });
-      return;
-    }
-
-    const playlists = await PlayList.aggregate([
-      {
-        $match: { ownerID: { $ne: req.user.id } },
-      },
-      {
-        $addFields: { likesCount: { $size: "$likes" } },
-      },
-      {
-        $sort: { likesCount: -1 },
-      },
-      {
-        $limit: 10,
-      },
-    ]);
-
-    res.status(200).json(playlists);
-  } catch (error) {
-    next(error);
-  }
-};
-
 export const getPopularAuthors = async (
   req: Request,
   res: Response,
@@ -320,6 +288,49 @@ export const getPopularAuthors = async (
   }
 };
 
+export const getPopularPlaylists = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ message: EResponseMessage.INVALID_CREDENTIALS });
+      return;
+    }
+
+    const playlists = await PlayList.aggregate([
+      {
+        $match: {
+          ownerID: { $ne: req.user.id },
+          visibility: EVisibility.PUBLIC,
+        },
+      },
+      {
+        $addFields: { likesCount: { $size: "$likes" } },
+      },
+      {
+        $sort: { likesCount: -1 },
+      },
+      {
+        $limit: 10,
+      },
+      {
+        $lookup: {
+          from: "songs",
+          localField: "song",
+          foreignField: "_id",
+          as: "song",
+        },
+      },
+    ]);
+
+    res.status(200).json(playlists);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getRandomSongsByAuthors = async (
   req: Request,
   res: Response,
@@ -340,6 +351,46 @@ export const getRandomSongsByAuthors = async (
     ]);
 
     res.status(200).json(songs);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const searchEntities = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { query, type } = req.query;
+
+    if (
+      !query ||
+      typeof query !== "string" ||
+      !type ||
+      typeof type !== "string"
+    ) {
+      res.status(200).json([]);
+      return;
+    }
+
+    const regex = new RegExp("^" + query, "i");
+    let results: any[] = [];
+
+    switch (type) {
+      case "Artists":
+        results = await UserEntity.find({ username: regex });
+        break;
+      case "Songs":
+        results = await Song.find({ title: regex });
+        break;
+      case "Playlists":
+        results = await PlayList.find({ name: regex }).populate("song");
+        break;
+      default:
+        results = [];
+    }
+    res.status(200).json(results);
   } catch (error) {
     next(error);
   }

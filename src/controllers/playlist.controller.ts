@@ -55,6 +55,42 @@ export const getMyPlayLists = async (
   }
 };
 
+export const addSongToPlaylist = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { songId, playlistId } = req.query;
+
+    if (
+      !songId ||
+      typeof songId !== "string" ||
+      !playlistId ||
+      typeof playlistId !== "string"
+    ) {
+      res.status(400).json({ message: EResponseMessage.INVALID_CREDENTIALS });
+      return;
+    }
+
+    const playlist = await PlayList.findById(playlistId);
+
+    if (!playlist) {
+      res.status(404).json({ message: "Playlist not found" });
+      return;
+    }
+
+    if (!playlist.song.includes(new mongoose.Types.ObjectId(songId))) {
+      playlist.song.push(new mongoose.Types.ObjectId(songId));
+      await playlist.save();
+    }
+
+    res.status(200).json({ message: "Song added successfully", playlist });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getMyPlayList = async (
   req: Request,
   res: Response,
