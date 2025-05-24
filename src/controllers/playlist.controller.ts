@@ -32,6 +32,44 @@ export const createPlayList = async (
   }
 };
 
+export const addPlayListById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    if (!req.user?.id) {
+      res.status(401).json({ message: "Invalid credentials" });
+      return;
+    }
+
+    const existingPlaylist = await PlayList.findById(id);
+    if (!existingPlaylist) {
+      res.status(404).json({ message: "Playlist not found" });
+      return;
+    }
+
+    const newPlaylist = new PlayList({
+      _id: new mongoose.Types.ObjectId(),
+      ownerID: req.user.id,
+      name: existingPlaylist.name,
+      visibility: existingPlaylist.visibility,
+      song: [...existingPlaylist.song],
+      likes: [],
+    });
+
+    await newPlaylist.save();
+
+    res
+      .status(201)
+      .json({ message: "Playlist copied successfully", playlist: newPlaylist });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getMyPlayLists = async (
   req: Request,
   res: Response,
@@ -325,6 +363,43 @@ export const patchDislike = async (
     );
 
     res.status(200).json(updatedPlayList);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteSongFromPlayList = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const idsRaw = req.query.ids;
+    const ids = typeof idsRaw === "string" ? idsRaw.split(",") : [];
+
+    if (!ids || !Array.isArray(ids) || ids.length !== 2) {
+      res.status(400).json({
+        message:
+          "Missing or invalid 'ids' query parameter. Expected [songId, playlistId]",
+      });
+      return;
+    }
+
+    const [songId, playlistId] = ids;
+
+    const playlist = await PlayList.findById(playlistId);
+    if (!playlist) {
+      res.status(404).json({ message: "Playlist not found" });
+      return;
+    }
+
+    playlist.song = playlist.song.filter((id) => id.toString() !== songId);
+
+    await playlist.save();
+
+    res
+      .status(200)
+      .json({ message: "Song removed from playlist successfully" });
   } catch (error) {
     next(error);
   }
