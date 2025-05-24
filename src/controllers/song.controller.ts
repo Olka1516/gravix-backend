@@ -4,6 +4,7 @@ import { NextFunction, Request, Response } from "express";
 import { UploadedFile } from "express-fileupload";
 import cloudinary from "../config/cloudinary";
 import UserEntity from "@/entities/User.entity";
+import PlayList from "@/entities/PlayList.entity";
 
 type CloudinaryUploadResponse = {
   public_id: string;
@@ -375,9 +376,13 @@ export const deleteSongById = async (
       return;
     }
 
+    await PlayList.updateMany({ song: id }, { $pull: { song: id } });
+
     await song.deleteOne();
 
-    res.status(200).json({ message: "Song deleted successfully" });
+    res.status(200).json({
+      message: "Song deleted successfully and removed from all playlists",
+    });
   } catch (error) {
     next(error);
   }
