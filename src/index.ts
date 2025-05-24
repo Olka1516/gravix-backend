@@ -27,7 +27,7 @@ app.use(
     origin: devMode
       ? ["http://localhost:5173", "http://localhost:4173"]
       : "https://gravix-frontend.vercel.app",
-    methods: "GET,POST,PUT,DELETE,OPTIONS",
+    methods: "GET,POST,PATCH,PUT,DELETE,OPTIONS",
     allowedHeaders: "Content-Type,Authorization",
     credentials: true,
   })
