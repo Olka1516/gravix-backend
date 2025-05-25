@@ -6,6 +6,7 @@ import { NextFunction, Request, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 import cloudinary from "../config/cloudinary";
 import { UploadedFile } from "express-fileupload";
+import nodemailer from "nodemailer";
 
 type CloudinaryUploadResponse = {
   public_id: string;
@@ -21,6 +22,14 @@ type CloudinaryUploadResponse = {
   url: string;
   secure_url: string;
 };
+
+const transporter = nodemailer.createTransport({
+  service: "gmail", // use false for STARTTLS; true for SSL on port 465
+  auth: {
+    user: process.env.SENDER_EMAIL,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 export const register = async (
   req: Request,
@@ -343,6 +352,37 @@ export const updateUsesrPhoto = async (
     }
 
     res.status(200).json({ message: "Photo updated", avatar: imageUrl });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const sendMessage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { email, message } = req.body;
+    console.log(email);
+    if (!email || !message) {
+      res.status(400).json({ message: "Missing required fields" });
+      return;
+    }
+
+    const mailOptions = {
+      from: email,
+      to: process.env.SENDER_EMAIL,
+      subject: "Contact",
+      text: `${email}: ${message}`,
+    };
+
+    console.log("Email sent:", process.env.SMTP_PASS);
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent:", info.response);
+    res
+      .status(200)
+      .json({ status: "success", message: "Email sent successfully" });
   } catch (error) {
     next(error);
   }

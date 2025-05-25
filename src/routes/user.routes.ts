@@ -5,6 +5,7 @@ import {
   login,
   register,
   saveUserAnswers,
+  sendMessage,
   updateSubscribers,
   updateUsesrPhoto,
 } from "@/controllers/user.controller";
@@ -21,5 +22,6 @@ router.put("/update/photo", authMiddleware, updateUsesrPhoto);
 router.get("/info/:username", authMiddleware, getUserByUsername);
 router.get("/all", authMiddleware, getAllUsers);
 router.get("/profile", authMiddleware, getProfile);
+router.post("/send", sendMessage);
 
 export default router;
